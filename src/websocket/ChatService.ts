@@ -1,6 +1,7 @@
 import { container } from 'tsyringe';
 import { io } from '../http';
 import { CreateChatRoomService } from '../services/CreateChatRoomService';
+import { CreateMessageService } from '../services/CreateMessageService';
 import { CreateUserService } from '../services/CreateUserService';
 import { GetAllUsersService } from '../services/GetAllUsersService';
 import { GetChatRoomByUsersService } from '../services/GetChatRoomByUsersService';
@@ -41,8 +42,29 @@ io.on('connect', socket => {
       room = await createChatRoomService.execute([data.idUser, userLogged._id])
     }
 
-    console.log("room", room)
+    socket.join(room.idChatRoom)
 
     callback({ room })
+  })
+
+  socket.on('message', async data => {
+    /**
+     * Se um usuário cair, ainda vai ser posível ver as mensagens? As mensagens estão ligadas
+     * à sala, e a sala não depende dos socket.id e sim dos user._id
+     */
+
+    const getUserBySocketIdService = container.resolve(GetUserBySocketIdService)
+    const createMessageService = container.resolve(CreateMessageService)
+
+    const user = await getUserBySocketIdService.execute(socket.id)
+
+    const message = await createMessageService.execute({
+      from: user._id,
+      roomId: data.message,
+      text: data.idChatRoom,
+    })
+
+    io.to(data.idChatRoom).emit('message', { message, user }) // já não tem o user na message?
+
   })
 })
