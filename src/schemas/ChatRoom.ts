@@ -1,0 +1,28 @@
+import mongoose, { Document, Schema } from "mongoose";
+import { User } from "./User";
+import { v4 as uuid } from "uuid";
+
+
+type ChatRoom = Document & {
+  idUsers: User[]
+  idChatRoom: String
+}
+
+// Schema
+const ChatRoomSchema = new Schema({
+  idUsers: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Users"
+    }
+  ],
+  idChatRoom: {
+    type: String,
+    default: uuid(),
+  }
+})
+
+// Model (cria a collection no DB)
+const ChatRoom = mongoose.model<ChatRoom>("ChatRooms", ChatRoomSchema);
+
+export { ChatRoom }
