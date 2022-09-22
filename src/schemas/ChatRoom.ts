@@ -5,7 +5,7 @@ import { v4 as uuid } from "uuid";
 
 type ChatRoom = Document & {
   idUsers: User[]
-  idChatRoom: String
+  idChatRoom: string
 }
 
 // Schema
