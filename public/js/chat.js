@@ -1,5 +1,5 @@
 const socket = io('http://localhost:3000')
-let roomId = ''
+let idChatRoom = ''
 
 function onLoad() {
   const urlParams = new URLSearchParams(window.location.search)
@@ -21,55 +21,64 @@ function onLoad() {
     avatar,
   })
   
-  socket.on('new_users', data => { // ou deixa o padrão que é 'data'
+  socket.on('new_users', user => {
     
-    const existInDiv = document.getElementById(`user_${data._id}`)
+    const existInDiv = document.getElementById(`user_${user._id}`)
 
     if(!existInDiv) {
-      addUser(data)
+      addUser(user)
     }
   })
 
   socket.emit('get_users', (users) => {
-    console.log('getUsers', users)
-
     users.map(user => {
       if(user.email !== email) {
         addUser(user)
       }
     })
+  })
 
+  socket.on('message', (data) => {
+    console.log('message', data)
   })
 }
 
 document.getElementById('users_list').addEventListener('click', (event) => {
   if(event.target && event.target.matches('li.user_name_list')) {
     const idUser = event.target.getAttribute('idUser')
-    console.log('idUser', idUser)
 
     socket.emit('start_chat', { idUser }, (data) => {
-      console.log('start_chat:', data)
-      roomId = data.room.idChatRoom
+      idChatRoom = data.room.idChatRoom
     })
   }
 })
 
-onLoad()
+document.getElementById('user_message').addEventListener('keypress', (e) => {
+  if(e.key === 'Enter') {
+    const message = e.target.value
+
+    socket.emit('message', { message, idChatRoom })
+
+    e.target.value = ''
+  }
+})
 
 function addUser(user) {
- const usersList = document.getElementById('users_list') 
- 
- usersList.innerHTML += `
-   <li
-      class="user_name_list"
-      id="user_${user._id}"
-      idUser="${user._id}"
-    >
-      <img
-        class="nav_avatar"
-        src=${user.avatar}
-      />
-      ${user.name}
-    </li>
- `
-}
+  const usersList = document.getElementById('users_list') 
+  
+  usersList.innerHTML += `
+    <li
+       class="user_name_list"
+       id="user_${user._id}"
+       idUser="${user._id}"
+     >
+       <img
+         class="nav_avatar"
+         src=${user.avatar}
+       />
+       ${user.name}
+     </li>
+  `
+ }
+
+onLoad()
