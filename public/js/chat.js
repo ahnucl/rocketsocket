@@ -43,9 +43,15 @@ function onLoad() {
       addMessage(data)
     } else {
       // Acender bolinha na outra room - pelo visto não funciona por aqui
-      console.log('Teste')
-      const userNotification = document.querySelector(`li[idUser="${data.message.from}"]`)
-      console.log('Notificação', userNotification)
+      /**
+       * Do jeito que está o backend, isso aqui só funcionaria se a room já fosse criada no login.
+       * Se o destinatário clicar no remetente ele (dest) será adicionado à room. Antes disso ele
+       * não está na room. Nesse caso, realmente o evento de notificação resolve bem melhor
+       */
+      
+      // console.log('Teste')
+      // const userNotification = document.querySelector(`li[idUser="${data.message.from}"]`)
+      // console.log('Notificação', userNotification)
     }
   })
 
