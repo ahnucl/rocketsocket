@@ -4,7 +4,9 @@ import { CreateChatRoomService } from '../services/CreateChatRoomService';
 import { CreateMessageService } from '../services/CreateMessageService';
 import { CreateUserService } from '../services/CreateUserService';
 import { GetAllUsersService } from '../services/GetAllUsersService';
+import { GetChatRoomByIdService } from '../services/GetChatRoomByIdService';
 import { GetChatRoomByUsersService } from '../services/GetChatRoomByUsersService';
+import { GetMessagesByChatRoomService } from '../services/GetMessagesByChatRoomService';
 import { GetUserBySocketIdService } from '../services/GetUserBySocketIdService';
 
 io.on('connect', socket => {
@@ -33,6 +35,7 @@ io.on('connect', socket => {
     const createChatRoomService = container.resolve(CreateChatRoomService)
     const getChatRoomByUsersService = container.resolve(GetChatRoomByUsersService)
     const getUserBySocketIdService = container.resolve(GetUserBySocketIdService)
+    const getMessagesByChatRoomService = container.resolve(GetMessagesByChatRoomService)
 
     const userLogged = await getUserBySocketIdService.execute(socket.id)
 
@@ -44,7 +47,9 @@ io.on('connect', socket => {
 
     socket.join(room.idChatRoom)
 
-    callback({ room })
+    const messages = await getMessagesByChatRoomService.execute(room.idChatRoom)
+
+    callback({ room, messages })
   })
 
   socket.on('message', async data => {
@@ -54,17 +59,27 @@ io.on('connect', socket => {
      */
 
     const getUserBySocketIdService = container.resolve(GetUserBySocketIdService)
+    const getChatRoomByIdService = container.resolve(GetChatRoomByIdService)
     const createMessageService = container.resolve(CreateMessageService)
 
     const user = await getUserBySocketIdService.execute(socket.id)
 
     const message = await createMessageService.execute({
       from: user._id,
-      roomId: data.message,
-      text: data.idChatRoom,
+      roomId: data.idChatRoom,
+      text: data.message,
     })
 
+    // Enviar mensagem para outros usuários da sala
     io.to(data.idChatRoom).emit('message', { message, user }) // já não tem o user na message?
 
+    // Enviar notificação para o usuário correto
+    const room = await getChatRoomByIdService.execute(data.idChatRoom)
+
+    const destinationUser = room.idUsers.find(roomUser => String(roomUser._id) !== String(user._id))
+
+    io.to(destinationUser.socket_id).emit('notification', {
+      from: user
+    })
   })
 })

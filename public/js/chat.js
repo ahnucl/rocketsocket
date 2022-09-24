@@ -39,29 +39,47 @@ function onLoad() {
   })
 
   socket.on('message', (data) => {
-    console.log('message', data)
+    if(data.message.roomId === idChatRoom){
+      addMessage(data)
+    } else {
+      // Acender bolinha na outra room - pelo visto não funciona por aqui
+      console.log('Teste')
+      const userNotification = document.querySelector(`li[idUser="${data.message.from}"]`)
+      console.log('Notificação', userNotification)
+    }
+  })
+
+  socket.on('notification', data => {
+
+    if(data.roomId !== idChatRoom){
+      const user = document.getElementById(`user_${data.from._id}`)
+      
+      user.insertAdjacentHTML('afterbegin', `
+      <div class="notification"></div>
+      `)
+    }
   })
 }
 
-document.getElementById('users_list').addEventListener('click', (event) => {
-  if(event.target && event.target.matches('li.user_name_list')) {
-    const idUser = event.target.getAttribute('idUser')
+function addMessage(data) {
+  const divMessageUser = document.getElementById('message_user')
 
-    socket.emit('start_chat', { idUser }, (data) => {
-      idChatRoom = data.room.idChatRoom
-    })
-  }
-})
+  const formatedDate = dayjs(data.message.created_at).format('DD/MM/YYYY HH:mm')
 
-document.getElementById('user_message').addEventListener('keypress', (e) => {
-  if(e.key === 'Enter') {
-    const message = e.target.value
-
-    socket.emit('message', { message, idChatRoom })
-
-    e.target.value = ''
-  }
-})
+  divMessageUser.innerHTML +=  `
+    <span class="user_name user_name_date">
+      <img
+        class="img_user"
+        src=${data.user.avatar}
+      />
+      <strong>${data.user.name}</strong>
+      <span> ${formatedDate}</span>
+    </span>
+    <div class="messages">
+      <span class="chat_message">${data.message.text}</span>
+    </div>
+  `
+}
 
 function addUser(user) {
   const usersList = document.getElementById('users_list') 
@@ -80,5 +98,40 @@ function addUser(user) {
      </li>
   `
  }
+
+document.getElementById('users_list').addEventListener('click', (event) => {
+  
+  document.getElementById('message_user').innerHTML = ''
+  if(event.target && event.target.matches('li.user_name_list')) {
+    const idUser = event.target.getAttribute('idUser')
+
+    const notification = document.querySelector(`#user_${idUser} .notification`)
+    if(notification) {
+      notification.remove()
+    }
+
+    socket.emit('start_chat', { idUser }, (response) => {
+      idChatRoom = response.room.idChatRoom
+
+      response.messages.forEach(message => {
+
+        addMessage({
+          message,
+          user: message.from
+        })
+      })
+    })
+  }
+})
+
+document.getElementById('user_message').addEventListener('keypress', (e) => {
+  if(e.key === 'Enter') {
+    const message = e.target.value
+
+    socket.emit('message', { message, idChatRoom })
+
+    e.target.value = ''
+  }
+})
 
 onLoad()
