@@ -78,7 +78,7 @@ function addMessage(data) {
         class="img_user"
         src=${data.user.avatar}
       />
-      <strong>${data.user.name}</strong>
+      <strong>${data.user.name} &nbsp; </strong>
       <span> ${formatedDate}</span>
     </span>
     <div class="messages">
@@ -106,10 +106,18 @@ function addUser(user) {
  }
 
 document.getElementById('users_list').addEventListener('click', (event) => {
-  
+  const inputMessage = document.getElementById('user_message')
+  inputMessage.classList.remove('hidden')
+
+  document
+    .querySelectorAll('li.user_name_list')
+    .forEach(item => item.classList.remove('user_in_focus'))
+
   document.getElementById('message_user').innerHTML = ''
   if(event.target && event.target.matches('li.user_name_list')) {
     const idUser = event.target.getAttribute('idUser')
+
+    event.target.classList.add('user_in_focus')
 
     const notification = document.querySelector(`#user_${idUser} .notification`)
     if(notification) {
